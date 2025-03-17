@@ -4,6 +4,7 @@ from PyQt5.QtGui import QTextCharFormat, QColor, QBrush, QPixmap, QPalette, QMou
 import json
 from task import Task
 from dialogs import AddTaskDialog
+from pomodoro import PomodoroTimer, PomodoroWidget
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
@@ -14,6 +15,14 @@ class ScheduleApp(QMainWindow):
         self.mood_data = {}
         self.init_ui()
         self.load_data()
+
+        # 初始化番茄钟
+        self.pomodoro_timer = PomodoroTimer()
+        self.pomodoro_timer.time_changed.connect(self.update_pomodoro_display)
+        self.pomodoro_timer.state_changed.connect(self.update_pomodoro_state)
+        # connect一下状态
+        self.pomodoro_timer.time_changed.connect(self.pomodoro_widget.set_remaining_time)
+        self.pomodoro_timer.state_changed.connect(self.pomodoro_widget.set_state)
 
     def init_ui(self):
         # 日历
@@ -27,7 +36,6 @@ class ScheduleApp(QMainWindow):
         self.calendar.setDateTextFormat(today, fmt)
         self.calendar.setContextMenuPolicy(Qt.CustomContextMenu)
         self.calendar.customContextMenuRequested.connect(self.show_mood_menu)
-
 
         # Next TODO
         self.todo_dock = QDockWidget("Next TODO", self)
@@ -43,6 +51,16 @@ class ScheduleApp(QMainWindow):
         self.course_dock.setWidget(self.course_table)
         self.addDockWidget(Qt.RightDockWidgetArea, self.course_dock)
         self.splitDockWidget(self.todo_dock, self.course_dock, Qt.Vertical)
+
+        # 番茄钟
+        self.pomodoro_widget = PomodoroWidget(self)
+        self.pomodoro_dock = QDockWidget("番茄钟", self)
+        self.pomodoro_dock.setWidget(self.pomodoro_widget)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.pomodoro_dock)  # 将番茄钟放在底部
+
+        self.start_pomodoro_btn = QPushButton("启动番茄钟", self)
+        self.start_pomodoro_btn.clicked.connect(self.start_pomodoro)
+        self.statusBar().addWidget(self.start_pomodoro_btn)
 
         # 示例课程
         self.course_table.setItem(0, 0, QTableWidgetItem("数学"))
@@ -82,18 +100,12 @@ class ScheduleApp(QMainWindow):
         self.setPalette(palette)
 
     def show_mood_menu(self, pos_or_date):
-
         if isinstance(pos_or_date, QDate):
             date = pos_or_date
             pos = self.calendar.mapToGlobal(self.calendar.pos())
-            
         else:
             date = self.calendar.selectedDate()
             pos = pos_or_date
-
-        # 模拟左键点击哟
-        left_click_event = QMouseEvent(QEvent.MouseButtonPress, self.calendar.mapFromGlobal(pos), Qt.LeftButton, Qt.LeftButton, Qt.NoModifier)
-        QApplication.postEvent(self.calendar, left_click_event)
 
         menu = QMenu(self)
         emojis = ["😢", "😔", "😐", "😊", "😍"]
@@ -174,3 +186,14 @@ class ScheduleApp(QMainWindow):
     def showEvent(self, event):
         print(f"窗口位置和大小: {self.geometry()}")
         super().showEvent(event)
+
+    def start_pomodoro(self):  # 番茄钟计时启动
+        self.pomodoro_timer.start()
+
+    def update_pomodoro_display(self, remaining_time):
+        # 更新番茄钟显示
+        self.pomodoro_widget.set_remaining_time(remaining_time)
+
+    def update_pomodoro_state(self, state):
+        # 更新番茄钟状态
+        self.pomodoro_widget.set_state(state)
