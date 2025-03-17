@@ -1,6 +1,11 @@
 from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QTime, Qt
 from PyQt5.QtGui import QColor, QConicalGradient, QRadialGradient, QPainter, QBrush, QPen, QFont
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from win11toast import toast
+from threading import Thread
+import global_vars
+
+
 
 class PomodoroTimer(QObject):
     time_changed = pyqtSignal(int)
@@ -36,14 +41,34 @@ class PomodoroTimer(QObject):
             self.timer.stop()
             if self.state == "focus":
                 print("专注时间结束，开始休息")
-                self.state = "break"
-                self.remaining_time = self.break_time
+                global_vars.today_tomatoes += 1
+                Thread(target=lambda : self.toast_up("番茄钟时间到咯~",f"今日番茄数：{global_vars.today_tomatoes}\n可选择操作：") ,daemon=False).start()
+
             else:
                 print("休息时间结束，开始专注")
                 self.state = "focus"
                 self.remaining_time = self.focus_time
             self.state_changed.emit(self.state)
             self.start()
+
+    def toast_up(self,*args,**kwargs):
+        try:
+            response = toast(*args,**kwargs,buttons=["休息\n（默认）", "再专注5分钟", "停止番茄钟"])
+            if type(response) == dict:
+                if response["arguments"] == "http:再专注5分钟":
+                    toast("再专注5分钟","好的喵")
+                    return
+                
+                if response["arguments"] == "http:停止番茄钟":
+                    toast("停止了喵","好的喵")
+                    return
+        except Exception as e:
+            print(e)
+            
+        
+        toast("开始休息了喵","好的喵")
+        self.state = "break"
+        self.remaining_time = self.break_time
 
 class PomodoroWidget(QWidget):
     def __init__(self, parent=None):
@@ -61,16 +86,16 @@ class PomodoroWidget(QWidget):
         self.start_btn = QPushButton("启动番茄钟", self)
         self.start_btn.clicked.connect(self.toggle_pomodoro)
 
-        # 添加操作按钮
-        self.action_btn = QPushButton("操作", self)
-        self.action_btn.setVisible(False)
-        self.action_btn.clicked.connect(self.on_action_clicked)  # 假设有一个操作点击事件
+        # 添加重置按钮
+        self.reset_btn = QPushButton("重置", self)
+        self.reset_btn.setVisible(False)
+        self.reset_btn.clicked.connect(self.on_reset_clicked)  # 假设有一个重置点击事件
 
         # 布局
         layout = QVBoxLayout(self)
         layout.addWidget(self.time_label)
         layout.addWidget(self.start_btn)
-        layout.addWidget(self.action_btn)
+        layout.addWidget(self.reset_btn)
 
         self.set_remaining_time(self.remaining_time)  # 初始化显示时间
         self.pomodoro_timer = None
@@ -81,15 +106,15 @@ class PomodoroWidget(QWidget):
         if self.pomodoro_timer.is_running:
             self.pomodoro_timer.pause()
             self.start_btn.setText("继续")
-            self.action_btn.setVisible(True)
+            self.reset_btn.setVisible(True)
         else:
             self.pomodoro_timer.start()
             self.start_btn.setText("暂停")
-            self.action_btn.setVisible(False)
+            self.reset_btn.setVisible(False)
 
-    def on_action_clicked(self):
-        # 处理操作按钮点击事件
-        print("操作按钮被点击")
+    def on_reset_clicked(self):
+        # 处理重置按钮点击事件
+        print("重置按钮被点击")
     def set_remaining_time(self, remaining_time):
         self.remaining_time = remaining_time
         time_str = QTime(0, 0).addSecs(remaining_time).toString("mm:ss")

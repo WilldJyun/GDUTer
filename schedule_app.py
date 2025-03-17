@@ -6,11 +6,12 @@ from task import Task
 from dialogs import AddTaskDialog
 from pomodoro import PomodoroTimer, PomodoroWidget
 
+
 class ScheduleApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("智能日程表")
-        self.setGeometry(100, 100, 1000, 600)
+        self.setWindowTitle("Jyun")
+        self.setGeometry(100, 100, 2160, 1280)
         self.tasks = []
         self.mood_data = {}
         
@@ -25,7 +26,7 @@ class ScheduleApp(QMainWindow):
         self.load_data()
 
     def init_ui(self):
-        # 日历
+    # 日历
         self.calendar_dock = QDockWidget("日历", self)
         self.calendar = QCalendarWidget()
         self.calendar_dock.setWidget(self.calendar)
@@ -37,22 +38,51 @@ class ScheduleApp(QMainWindow):
         self.calendar.setContextMenuPolicy(Qt.CustomContextMenu)
         self.calendar.customContextMenuRequested.connect(self.show_mood_menu)
 
-        # Next TODO
+    # Next TODO
         self.todo_dock = QDockWidget("Next TODO", self)
         self.todo_list = QListWidget()
         self.todo_dock.setWidget(self.todo_list)
         self.addDockWidget(Qt.RightDockWidgetArea, self.todo_dock)
 
-        # 课程表
+    # 课程表
         self.course_dock = QDockWidget("课程表", self)
-        self.course_table = QTableWidget(7, 5)
-        self.course_table.setHorizontalHeaderLabels(["周一", "周二", "周三", "周四", "周五"])
-        self.course_table.setVerticalHeaderLabels(["08:00", "10:00", "14:00", "16:00", "18:00"])
+        self.course_table = QTableWidget(12, 7)
+        self.course_table.setHorizontalHeaderLabels(["Sun","Mon", "Tue", "Wed", "Thur", "Fri", "Sat"])
+        
+        Vertical_labels = [
+            "第一节\n08:30 - 09:15",
+            "第二节\n09:20 - 10:05",
+            "第三节\n10:25 - 11:10",
+            "第四节\n11:15 - 12:00",
+            "-",
+            "第五节\n13:50 - 14:35",
+            "第六节\n14:40 - 15:25",
+            "第七节\n15:30 - 16:15",
+            "第八节\n16:30 - 17:15",
+            "第九节\n17:20 - 18:05",
+            "-",
+            "第十节\n18:30 - 19:15",
+            "第十一节\n19:20 - 20:05",
+            "第十二节\n20:10 - 20:55"
+        ]
+        self.course_table.setVerticalHeaderLabels()
         self.course_dock.setWidget(self.course_table)
         self.addDockWidget(Qt.RightDockWidgetArea, self.course_dock)
-        self.splitDockWidget(self.todo_dock, self.course_dock, Qt.Vertical)
+        # 设置行和列标题文字居中
+        self.course_table.horizontalHeader().setDefaultAlignment(Qt.AlignCenter)
+        self.course_table.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
 
-        # 番茄钟
+        # 设置行高以调整行距
+        row_height = 80  # 根据需要调整行高
+        row_width = 120
+        for row,count in range(max(self.course_table.rowCount(),self.course_table.columnCount())):
+            if Vertical_labels[count]=="-" :
+                print("aaa")
+            else:    
+                self.course_table.setRowHeight(row, row_height)
+            self.course_table.setColumnWidth(row, row_width)
+
+    # 番茄钟
         # 初始化 PomodoroWidget 并传递 PomodoroTimer 实例
         self.pomodoro_widget = PomodoroWidget(self)
         self.pomodoro_widget.set_timer(self.pomodoro_timer)
@@ -63,6 +93,12 @@ class ScheduleApp(QMainWindow):
         # connect一下番茄钟状态
         self.pomodoro_timer.time_changed.connect(self.pomodoro_widget.set_remaining_time)
         self.pomodoro_timer.state_changed.connect(self.pomodoro_widget.set_state)
+
+        # 最后，设置摆放位置
+        self.splitDockWidget(self.calendar_dock, self.pomodoro_dock, Qt.Vertical)
+        self.splitDockWidget(self.todo_dock, self.course_dock, Qt.Vertical)
+
+        # ========== 以上为QWidgets ==========
 
         # 示例课程
         self.course_table.setItem(0, 0, QTableWidgetItem("数学"))
@@ -86,6 +122,10 @@ class ScheduleApp(QMainWindow):
             QDockWidget, QListWidget, QTableWidget, QCalendarWidget {
                 border-radius: 10px;
                 background-color: rgba(255, 255, 255, 150);
+                font-family: "Microsoft YaHei";
+            }
+            QLabel {
+                font-family: "Microsoft YaHei";
             }
         """)
 

@@ -1,0 +1,1 @@
+today_tomatoes: int = 0
