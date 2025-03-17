@@ -1,6 +1,6 @@
-from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QTime
-from PyQt5.QtGui import QColor, QConicalGradient, QRadialGradient, QPainter, QBrush, QPen
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import QObject, QTimer, pyqtSignal, QTime, Qt
+from PyQt5.QtGui import QColor, QConicalGradient, QRadialGradient, QPainter, QBrush, QPen, QFont
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 
 class PomodoroTimer(QObject):
     time_changed = pyqtSignal(int)
@@ -11,15 +11,22 @@ class PomodoroTimer(QObject):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.tick)
         self.state = "focus"
-        self.focus_time = 25 * 60  # 25 minutes
-        self.break_time = 5 * 60  # 5 minutes
+        self.focus_time = 25 * 60  # 默认专注为 25 分钟
+        self.break_time = 5 * 60  # 默认休息为 5 分钟
         self.remaining_time = self.focus_time
+        self.is_running = False # 是否运行
 
     def start(self):
-        self.timer.start(1000)  # 1 second interval
+        self.timer.start(1000)  # 刷新组件的间隔，1000为1s。
+        self.is_running = True
 
     def stop(self):
         self.timer.stop()
+        self.is_running = False
+
+    def pause(self):
+        self.timer.stop()
+        self.is_running = False
 
     def tick(self):
         if self.remaining_time > 0:
@@ -41,16 +48,62 @@ class PomodoroTimer(QObject):
 class PomodoroWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.pomodoro_timer = None
         self.remaining_time = 25 * 60
         self.state = "focus"
 
+        # 添加显示剩余时间的标签
+        self.time_label = QLabel(self)
+        self.time_label.setAlignment(Qt.AlignCenter)
+        self.time_label.setFont(QFont("Arial", 20))
+
+        # 添加启动/暂停按钮
+        self.start_btn = QPushButton("启动番茄钟", self)
+        self.start_btn.clicked.connect(self.toggle_pomodoro)
+
+        # 添加操作按钮
+        self.action_btn = QPushButton("操作", self)
+        self.action_btn.setVisible(False)
+        self.action_btn.clicked.connect(self.on_action_clicked)  # 假设有一个操作点击事件
+
+        # 布局
+        layout = QVBoxLayout(self)
+        layout.addWidget(self.time_label)
+        layout.addWidget(self.start_btn)
+        layout.addWidget(self.action_btn)
+
+        self.set_remaining_time(self.remaining_time)  # 初始化显示时间
+        self.pomodoro_timer = None
+    def toggle_pomodoro(self):
+        if not self.pomodoro_timer:
+            return
+        
+        if self.pomodoro_timer.is_running:
+            self.pomodoro_timer.pause()
+            self.start_btn.setText("继续")
+            self.action_btn.setVisible(True)
+        else:
+            self.pomodoro_timer.start()
+            self.start_btn.setText("暂停")
+            self.action_btn.setVisible(False)
+
+    def on_action_clicked(self):
+        # 处理操作按钮点击事件
+        print("操作按钮被点击")
     def set_remaining_time(self, remaining_time):
         self.remaining_time = remaining_time
+        time_str = QTime(0, 0).addSecs(remaining_time).toString("mm:ss")
+        self.time_label.setText(time_str)
         self.update()
 
     def set_state(self, state):
         self.state = state
         self.update()
+    def set_timer(self, timer):
+        """外部注入计时器实例"""
+        self.pomodoro_timer = timer
+        self.pomodoro_timer.time_changed.connect(self.set_remaining_time)
+        self.pomodoro_timer.state_changed.connect(self.set_state)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -64,6 +117,12 @@ class PomodoroWidget(QWidget):
         # 计算角度
         total_time = 25 * 60 if self.state == "focus" else 5 * 60
         angle = 360 * (1 - self.remaining_time / total_time)
+
+        if total_time > 0 and self.remaining_time >= 0: # 安全计算时间比例
+            progress = 1 - self.remaining_time / total_time
+            angle = 360 * progress
+        else:
+            angle = 0
 
         # 设置渐变颜色
         if self.state == "focus":

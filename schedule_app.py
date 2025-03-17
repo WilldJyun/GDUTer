@@ -13,16 +13,16 @@ class ScheduleApp(QMainWindow):
         self.setGeometry(100, 100, 1000, 600)
         self.tasks = []
         self.mood_data = {}
-        self.init_ui()
-        self.load_data()
+        
 
         # 初始化番茄钟
         self.pomodoro_timer = PomodoroTimer()
         self.pomodoro_timer.time_changed.connect(self.update_pomodoro_display)
         self.pomodoro_timer.state_changed.connect(self.update_pomodoro_state)
-        # connect一下状态
-        self.pomodoro_timer.time_changed.connect(self.pomodoro_widget.set_remaining_time)
-        self.pomodoro_timer.state_changed.connect(self.pomodoro_widget.set_state)
+
+        # 最后
+        self.init_ui()
+        self.load_data()
 
     def init_ui(self):
         # 日历
@@ -53,14 +53,16 @@ class ScheduleApp(QMainWindow):
         self.splitDockWidget(self.todo_dock, self.course_dock, Qt.Vertical)
 
         # 番茄钟
+        # 初始化 PomodoroWidget 并传递 PomodoroTimer 实例
         self.pomodoro_widget = PomodoroWidget(self)
+        self.pomodoro_widget.set_timer(self.pomodoro_timer)
+        
         self.pomodoro_dock = QDockWidget("番茄钟", self)
         self.pomodoro_dock.setWidget(self.pomodoro_widget)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.pomodoro_dock)  # 将番茄钟放在底部
-
-        self.start_pomodoro_btn = QPushButton("启动番茄钟", self)
-        self.start_pomodoro_btn.clicked.connect(self.start_pomodoro)
-        self.statusBar().addWidget(self.start_pomodoro_btn)
+        # connect一下番茄钟状态
+        self.pomodoro_timer.time_changed.connect(self.pomodoro_widget.set_remaining_time)
+        self.pomodoro_timer.state_changed.connect(self.pomodoro_widget.set_state)
 
         # 示例课程
         self.course_table.setItem(0, 0, QTableWidgetItem("数学"))
