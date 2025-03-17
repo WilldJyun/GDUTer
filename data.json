@@ -1,0 +1,31 @@
+{
+    "mood_data": {
+        "2025-03-05": 4
+    },
+    "tasks": [
+        {
+            "date": "2025-03-16",
+            "time": "1,2",
+            "description": "体育(2)",
+            "urgency": 5
+        },
+        {
+            "date": "2025-03-17",
+            "time": "3,4",
+            "description": "物理",
+            "urgency": 5
+        },
+        {
+            "date": "2025-10-15",
+            "time": "10,11,12",
+            "description": "任务描述",
+            "urgency": 10
+        },
+        {
+            "date": "2025-03-16",
+            "time": "5,6",
+            "description": "我操，工数",
+            "urgency": 10
+        }
+    ]
+}

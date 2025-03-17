@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDockWidget, QCalendarWidget, QListWidget, QTableWidget, QMenu, QPushButton, QTableWidgetItem, QMessageBox, QListWidgetItem
 from PyQt5.QtCore import Qt, QDate, QPropertyAnimation, QEvent
-from PyQt5.QtGui import QTextCharFormat, QColor, QBrush, QPixmap, QPalette, QMouseEvent
+from PyQt5.QtGui import QTextCharFormat, QColor, QBrush, QPixmap, QPalette, QMouseEvent, QIcon
 import json
 from task import Task
 from dialogs import AddTaskDialog
@@ -11,6 +11,7 @@ class ScheduleApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Jyun")
+        self.setWindowIcon(QIcon("src/favicon.ico"))
         self.setGeometry(100, 100, 2160, 1280)
         self.tasks = []
         self.mood_data = {}
@@ -54,18 +55,16 @@ class ScheduleApp(QMainWindow):
             "第二节\n09:20 - 10:05",
             "第三节\n10:25 - 11:10",
             "第四节\n11:15 - 12:00",
-            "-",
             "第五节\n13:50 - 14:35",
             "第六节\n14:40 - 15:25",
             "第七节\n15:30 - 16:15",
             "第八节\n16:30 - 17:15",
             "第九节\n17:20 - 18:05",
-            "-",
             "第十节\n18:30 - 19:15",
             "第十一节\n19:20 - 20:05",
             "第十二节\n20:10 - 20:55"
         ]
-        self.course_table.setVerticalHeaderLabels()
+        self.course_table.setVerticalHeaderLabels(Vertical_labels)
         self.course_dock.setWidget(self.course_table)
         self.addDockWidget(Qt.RightDockWidgetArea, self.course_dock)
         # 设置行和列标题文字居中
@@ -73,14 +72,13 @@ class ScheduleApp(QMainWindow):
         self.course_table.verticalHeader().setDefaultAlignment(Qt.AlignCenter)
 
         # 设置行高以调整行距
-        row_height = 80  # 根据需要调整行高
-        row_width = 120
-        for row,count in range(max(self.course_table.rowCount(),self.course_table.columnCount())):
-            if Vertical_labels[count]=="-" :
-                print("aaa")
-            else:    
-                self.course_table.setRowHeight(row, row_height)
-            self.course_table.setColumnWidth(row, row_width)
+        row_height = 55  # 根据需要调整行高
+        column_width = 120 # 根据需要调整列宽
+
+        for row in range(max(self.course_table.rowCount(),self.course_table.columnCount())):
+            self.course_table.setRowHeight(row, row_height)
+            self.course_table.setColumnWidth(row, column_width)
+
 
     # 番茄钟
         # 初始化 PomodoroWidget 并传递 PomodoroTimer 实例
@@ -100,9 +98,7 @@ class ScheduleApp(QMainWindow):
 
         # ========== 以上为QWidgets ==========
 
-        # 示例课程
-        self.course_table.setItem(0, 0, QTableWidgetItem("数学"))
-        self.course_table.setItem(1, 1, QTableWidgetItem("物理"))
+
 
         # 同步课程到任务
         self.sync_courses_to_tasks()
@@ -182,15 +178,31 @@ class ScheduleApp(QMainWindow):
             self.todo_list.addItem(item)
 
     def sync_courses_to_tasks(self):
-        for row in range(self.course_table.rowCount()):
-            for col in range(self.course_table.columnCount()):
-                item = self.course_table.item(row, col)
-                if item:
-                    date = QDate.currentDate().addDays(col)  # 假设本周
-                    time = self.course_table.verticalHeaderItem(row).text()
-                    desc = item.text()
-                    self.tasks.append(Task(date, time, desc, 5))  # 默认紧迫度5
-        self.update_todo_list()
+        for task in self.tasks:
+            date = task.date
+            times = task.time.split(",")  # 获取节次列表
+            desc = task.description
+            urgency = task.urgency
+
+            for time in times:
+                row = int(time) - 1  # 节次转换为行索引
+                col = date.dayOfWeek() - 1  # 日期转换为列索引
+
+                item = QTableWidgetItem(desc)
+                item.setBackground(QBrush(self.get_color_by_urgency(urgency)))  # 根据紧迫度设置颜色
+                self.course_table.setItem(row, col, item)
+
+        # 示例课程
+        # self.course_table.setItem(1, 1, QTableWidgetItem("例子"))
+
+    def get_color_by_urgency(self, urgency):
+        # 根据紧迫度返回颜色
+        if urgency >= 8:
+            return QColor(255, 0, 0)  # 紧迫度高，红色
+        elif urgency >= 5:
+            return QColor(255, 165, 0)  # 紧迫度中等，橙色
+        else:
+            return QColor(0, 128, 0)  # 紧迫度低，绿色
 
     def add_custom_task(self):
         dialog = AddTaskDialog(self)
@@ -212,19 +224,25 @@ class ScheduleApp(QMainWindow):
             "mood_data": {date: mood for date, mood in self.mood_data.items()},
             "tasks": [{"date": task.date.toString(), "time": task.time, "description": task.description, "urgency": task.urgency} for task in self.tasks]
         }
-        with open("schedule_data.json", "w") as f:
+        with open("data.json", "w") as f:
             json.dump(data, f)
 
     def load_data(self):
         try:
-            with open("schedule_data.json", "r") as f:
+            with open("data.json", "r", encoding='utf-8') as f:
                 data = json.load(f)
                 self.mood_data = {date: mood for date, mood in data["mood_data"].items()}
-                self.tasks = [Task(QDate.fromString(task["date"]), task["time"], task["description"], task["urgency"]) for task in data["tasks"]]
+                self.tasks = [
+                    Task(QDate.fromString(task["date"], "yyyy-MM-dd"),
+                    task["time"], 
+                    task["description"], 
+                    task["urgency"])
+                    for task in data["tasks"]
+                ]
                 self.update_todo_list()
+                self.sync_courses_to_tasks()  # 同步课程到任务
         except FileNotFoundError:
             pass
-
     def showEvent(self, event):
         print(f"窗口位置和大小: {self.geometry()}")
         super().showEvent(event)
