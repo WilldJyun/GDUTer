@@ -5,10 +5,18 @@ class AddTaskDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("添加任务")
         layout = QVBoxLayout()
-        self.date_input = QLineEdit("YYYY-MM-DD")
-        self.time_input = QLineEdit("HH:MM")
-        self.desc_input = QLineEdit("任务描述")
-        self.urgency_input = QLineEdit("0~10")
+        self.date_input = QLineEdit()
+        self.date_input.setPlaceholderText("YYYY-MM-DD")
+
+        self.time_input = QLineEdit()
+        self.time_input.setPlaceholderText("HH:MM")
+
+        self.desc_input = QLineEdit()
+        self.desc_input.setPlaceholderText("任务描述")
+
+        self.urgency_input = QLineEdit()
+        self.urgency_input.setPlaceholderText("紧急程度 0~10")
+
         self.add_btn = QPushButton("添加")
         self.add_btn.clicked.connect(self.accept)
         layout.addWidget(self.date_input)
