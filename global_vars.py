@@ -1,6 +1,14 @@
 import random
+import os
 
-data_file_name = "data.json"
+# 获取 main.py 所在的目录
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 打印路径以确认
+print(f"BASE Path: {BASE_DIR}")
+
+data_file_name = os.path.join(BASE_DIR, "data.json") # 数据文件路径
+src_path = os.path.join(BASE_DIR, "src")
+background_pic = os.path.join(src_path, "background.jpg")
 
 today_tomatoes: int = 0 # 今日的番茄钟数量
 total_tomatoes: int = 0 # 总共的番茄钟数量

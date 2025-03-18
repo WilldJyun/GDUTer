@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QDockWidget, QCalendarWid
 from PyQt5.QtCore import Qt, QDate, QPropertyAnimation, QEvent
 from PyQt5.QtGui import QTextCharFormat, QColor, QBrush, QPixmap, QPalette, QMouseEvent, QIcon
 import json
+import global_vars
+import os
 from task import Task  # 自定义任务类
 from dialogs import AddTaskDialog  # 添加任务对话框
 from pomodoro import PomodoroTimer, PomodoroWidget  # 番茄钟相关模块
@@ -12,7 +14,7 @@ class ScheduleApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Jyun")  # 设置窗口标题
-        self.setWindowIcon(QIcon("src/favicon.ico"))  # 设置窗口图标
+        self.setWindowIcon(QIcon(os.path.join(global_vars.src_path, "favicon.ico")))  # 设置窗口图标
         self.setGeometry(100, 100, 2160, 1280)  # 设置窗口初始位置和大小
         self.tasks = []  # 初始化任务列表
         self.mood_data = {}  # 初始化心情数据字典
@@ -27,6 +29,8 @@ class ScheduleApp(QMainWindow):
         self.load_needed_data()
 
     def init_ui(self):
+        self.background_pixmap = None # 背景图片地址
+
         # 日历控件初始化
         self.calendar_dock = QDockWidget("日历", self)  # 创建日历停靠窗口
         self.calendar = QCalendarWidget()  # 创建日历小部件
@@ -48,6 +52,12 @@ class ScheduleApp(QMainWindow):
         self.todo_layout.addWidget(self.todo_list)  # 将待办事项列表添加到布局中
 
         self.task_countdown_label = QLabel("最紧急任务倒计时: ")  # 创建任务倒计时标签
+        self.task_countdown_label.setStyleSheet("""
+            QLabel {
+                font-size: 56px;  /* 设置字体大小 */
+                qproperty-alignment: 'AlignCenter';  /* 设置文本居中 */
+            }
+        """)
         self.todo_layout.addWidget(self.task_countdown_label)  # 将标签添加到布局中
         self.todo_widget.layout().setStretchFactor(self.todo_list, 1)  # 设置列表拉伸因子
         self.todo_widget.layout().setStretchFactor(self.task_countdown_label, 1)  # 设置标签拉伸因子
@@ -118,7 +128,6 @@ class ScheduleApp(QMainWindow):
 
         # 设置窗口透明度和背景图片
         self.setWindowOpacity(1)
-        self.background_pixmap = QPixmap('src/background.jpg')  # 加载背景图片
         self.setBackground()
 
         # 设置控件样式
@@ -143,7 +152,8 @@ class ScheduleApp(QMainWindow):
         super().closeEvent(a0)
 
     # 根据窗口大小调整背景图片
-    def setBackground(self):
+    def setBackground(self,pic = global_vars.background_pic):
+        self.background_pixmap = QPixmap(pic)  # 加载背景图片
         scaled_pixmap = self.background_pixmap.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
         palette = self.palette()
         palette.setBrush(QPalette.Window, QBrush(scaled_pixmap))
@@ -201,11 +211,11 @@ class ScheduleApp(QMainWindow):
             most_urgent_task = sorted_tasks[0]
             days_left = most_urgent_task.days_until_due()
             if days_left > 1:
-                self.task_countdown_label.setText(f"最紧急任务倒计时: {most_urgent_task.description} (紧迫度: {most_urgent_task.urgency})")
+                self.task_countdown_label.setText(f"最紧急任务倒计时:\n {most_urgent_task.description} \n(紧迫度: {most_urgent_task.urgency})")
             else:
-                self.task_countdown_label.setText(f"最紧急任务倒计时: {days_left}天 {most_urgent_task.time} - {most_urgent_task.description} (紧迫度: {most_urgent_task.urgency})")
+                self.task_countdown_label.setText(f"最紧急任务倒计时:\n {days_left}天 {most_urgent_task.time} - {most_urgent_task.description} \n(紧迫度: {most_urgent_task.urgency})")
         else:
-            self.task_countdown_label.setText("最紧急任务倒计时: 无任务")
+            self.task_countdown_label.setText("最紧急任务倒计时:\n 无任务")
 
     # 同步日程到日程表
     def sync_courses_to_table(self):
