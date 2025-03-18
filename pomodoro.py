@@ -26,7 +26,7 @@ class PomodoroTimer(QObject):
 
     def start(self):
         """启动计时器，每秒触发一次"""
-        self.timer.start(2)  # 刷新组件的间隔，1000为1s。
+        self.timer.start(1000)  # 刷新组件的间隔，1000为1s。
         self.is_running = True
 
     def stop(self):
@@ -44,15 +44,16 @@ class PomodoroTimer(QObject):
             self.timer.stop()
             if self.state == "focus":
                 print("专注时间结束，开始休息")
+                global_vars.total_tomatoes += 1
                 global_vars.today_tomatoes += 1
                 self.remaining_time = self.break_time
                 self.time_changed.emit(self.remaining_time)
                 if global_vars.today_tomatoes % 2 == 0: # 如果是偶数，说明两个番茄钟，一小时了，提醒喝水
                     title,content = global_vars.random_focus_timeup_prompt(healthy_remind=True)
-                    self.toast_up(title, content + f"\n\n今日番茄数：{global_vars.today_tomatoes}\n可选择操作：")
+                    self.toast_up(title, content + "\n可选择操作：")
                 else:
                     title,content = global_vars.random_focus_timeup_prompt(healthy_remind=False)
-                    self.toast_up(title, content + f"\n\n今日番茄数：{global_vars.today_tomatoes}\n可选择操作：")
+                    self.toast_up(title, content + "\n可选择操作：")
 
             else:
                 print("休息时间结束，开始专注")
@@ -72,7 +73,9 @@ class PomodoroTimer(QObject):
             if type(response) == dict:
                 if response["arguments"] == "http:再专注5分钟":
                     print("再专注5分钟")
-                    global_vars.today_tomatoes -= 1 # 减去一个番茄钟，因为再专注五分钟仍然是原来的番茄钟。
+                    global_vars.total_tomatoes -= 1 # 总的减去一个番茄钟，因为再专注五分钟仍然是原来的番茄钟。
+                    global_vars.today_tomatoes -= 1 # 今日减去一个番茄钟，因为再专注五分钟仍然是原来的番茄钟。
+                    
                     self.state = "focus"
                     self.remaining_time = 5*60 # 5分钟
                     self.state_changed.emit(self.state)
@@ -84,7 +87,8 @@ class PomodoroTimer(QObject):
                     self.pomodoro_widget.on_reset_clicked()
                     return
         except Exception as e:
-            print("我操，爆了\n", e)
+            print("番茄钟处理发生错误！")
+            raise e
         
         # 默认选项放下面自动处理
         

@@ -6,7 +6,7 @@ import json
 from task import Task  # 自定义任务类
 from dialogs import AddTaskDialog  # 添加任务对话框
 from pomodoro import PomodoroTimer, PomodoroWidget  # 番茄钟相关模块
-
+import data_handler
 
 class ScheduleApp(QMainWindow):
     def __init__(self):
@@ -24,7 +24,7 @@ class ScheduleApp(QMainWindow):
 
         # 初始化用户界面并加载数据
         self.init_ui()
-        self.load_data()
+        self.load_needed_data()
 
     def init_ui(self):
         # 日历控件初始化
@@ -137,6 +137,10 @@ class ScheduleApp(QMainWindow):
     def resizeEvent(self, event):
         self.setBackground()
         super().resizeEvent(event)
+
+    def closeEvent(self, a0):
+        self.save_data()
+        super().closeEvent(a0)
 
     # 根据窗口大小调整背景图片
     def setBackground(self):
@@ -270,30 +274,30 @@ class ScheduleApp(QMainWindow):
 # ========================== 保存数据操作 Save data ==========================
     # 保存数据到文件
     def save_data(self):
-        data = {
-            "mood_data": {date: mood for date, mood in self.mood_data.items()},
-            "tasks": [{"date": task.date.toString(), "time": task.time, "description": task.description, "urgency": task.urgency} for task in self.tasks]
-        }
-        with open("data.json", "w") as f:
-            json.dump(data, f)
+        data_handler.save_data(self.mood_data, self.tasks)
 
-    # 从文件加载数据
-    def load_data(self):
-        try:
-            with open("data.json", "r", encoding='utf-8') as f:
-                data = json.load(f)
-                self.mood_data = {date: mood for date, mood in data["mood_data"].items()}
-                self.tasks = [
-                    Task(QDate.fromString(task["date"], "yyyy-MM-dd"),
-                    task["time"], 
-                    task["description"], 
-                    task["urgency"])
-                    for task in data["tasks"]
-                ]
-                self.update_todo_list()
-                self.sync_courses_to_table()  # 同步日程到任务
-        except FileNotFoundError:
-            pass
+    # 从文件加载数据，这里方法重写了，要加上自己的加载逻辑
+    def load_needed_data(self):
+        # try:
+        #     mood_data, tasks = data_handler.load_data()
+        #     self.mood_data = mood_data
+        #     self.tasks = [
+        #         Task(QDate.fromString(task["date"], "yyyy-MM-dd"),
+        #         task["time"], 
+        #         task["description"], 
+        #         task["urgency"])
+        #         for task in tasks
+        #     ]
+        #     self.update_todo_list()
+        #     self.sync_courses_to_table()  # 同步日程到任务
+        # except Exception as e:
+        #     print("当加载文件时出错：",e)
+
+        mood_data, tasks = data_handler.load_data()
+        self.mood_data = mood_data
+        self.tasks = tasks
+        self.update_todo_list()
+        self.sync_courses_to_table()  # 同步日程到任务
 
 # ==========================  番茄钟 Pomodoro widgets ==========================
 

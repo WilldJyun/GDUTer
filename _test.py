@@ -44,9 +44,9 @@ class PomodoroTimer(QObject):
             self.stop()  # 时间耗尽，停止计时器
             if self.state == "focus":
                 # 专注时间结束
-                global_vars.today_tomatoes += 1  # 增加今日番茄数
+                global_vars.total_tomatoes += 1  # 增加今日番茄数
                 # 发送通知信号，交由主线程处理
-                self.notify_signal.emit("番茄钟时间到咯~", f"今日番茄数：{global_vars.today_tomatoes}\n可选择操作：")
+                self.notify_signal.emit("番茄钟时间到咯~", f"今日番茄数：{global_vars.total_tomatoes}\n可选择操作：")
                 self.state = "break"  # 切换到休息状态
                 self.remaining_time = self.break_time  # 设置休息时间
                 self.time_changed.emit(self.remaining_time)  # 更新 UI
